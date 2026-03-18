@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.js.map
+
+# IDE
+.idea/
+.vscode/
+
+# .env files are intentionally committed for this demo project.
+# They contain only LocalStack/placeholder credentials — no real secrets.
+# In a production project, add the line below and use a secrets manager instead:
+# .env
