@@ -93,8 +93,21 @@ services:
       AWS_SECRET_ACCESS_KEY: test
       AWS_ENDPOINT_URL: http://localstack:4566
       ORDER_EVENT_BUS_NAME: ecommerce-orders
-      MOCK_CARRIER_BASE_URL: http://shipping-service:3000
       SQS_QUEUE_NAME: shipping-service-order-paid
+      # Points to the mock carrier running inside this same service container.
+      # In production, replace with https://express.api.dhl.com/mydhlapi and real credentials.
+      DHL_BASE_URL: http://shipping-service:3000/mock-carrier
+      DHL_API_KEY: dev-placeholder
+      DHL_API_SECRET: dev-placeholder
+      DHL_ACCOUNT_NUMBER: dev-placeholder
+      DHL_SHIPPER_NAME: Dev Shipper
+      DHL_SHIPPER_EMAIL: dev@example.com
+      DHL_SHIPPER_PHONE: '+10000000000'
+      DHL_SHIPPER_ADDRESS_LINE1: 1 Dev Street
+      DHL_SHIPPER_CITY: Dev City
+      DHL_SHIPPER_POSTAL_CODE: '00000'
+      DHL_SHIPPER_COUNTRY_CODE: US
+      DHL_DEFAULT_WEIGHT_KG: '1'
     depends_on:
       localstack:
         condition: service_healthy

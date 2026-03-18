@@ -25,7 +25,7 @@ Customer
                             │ service  │  │ service  │  │ service  │  │  service         │
                             └────┬─────┘  └────┬─────┘  └────┬─────┘  └──────────────────┘
                                  │              │              │           (SES emails)
-                              S3 PDF         Stripe        FedEx mock
+                              S3 PDF         Stripe          DHL
 ```
 
 ### Event Flow
@@ -35,14 +35,54 @@ POST /v1/orders
    → [order-service] validate, calculate totals, persist, publish OrderCreated
    → [invoice-service] generate PDF, upload to S3, publish OrderInvoiced
    → [billing-service] charge Stripe, publish OrderPaid | OrderPaymentFailed
-   → [shipping-service] call carrier API, publish OrderShipped
+   → [shipping-service] call DHL Express API, publish OrderShipped
    → [notification-service] send SES email at every stage
    → [order-service] listens for status events, updates DynamoDB timeline
 ```
 
 ---
 
-## REST API Design
+## Running Locally
+
+### Prerequisites
+- Docker + Docker Compose
+- Node.js 20+
+
+### Start everything
+```bash
+docker compose up --build
+```
+
+All services start automatically. No external credentials are needed — DHL calls are intercepted by a local mock carrier running inside the shipping-service container.
+
+### Force a clean rebuild
+```bash
+docker compose build --no-cache && docker compose up
+```
+
+### Smoke test
+```bash
+curl -X POST http://localhost:3001/v1/orders \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -d '{
+    "customerId": "cust-demo-001",
+    "items": [{"productId": "PROD-001", "quantity": 2}],
+    "shippingAddress": {
+      "line1": "123 Main St",
+      "city": "Springfield",
+      "state": "IL",
+      "postalCode": "62701",
+      "countryCode": "US"
+    },
+    "paymentMethodId": "pm_test_123",
+    "currency": "USD"
+  }'
+```
+
+---
+
+## REST API
 
 ### `POST /v1/orders`
 
@@ -88,7 +128,7 @@ Idempotency-Key: <client-generated UUID>     # required — enables safe retries
   "tax": 584,
   "total": 8480,
   "currency": "USD",
-  "shippingAddress": { ... },
+  "shippingAddress": { "..." : "..." },
   "statusTimeline": [
     { "status": "PENDING", "at": "2026-03-18T12:00:00.000Z" }
   ],
@@ -99,140 +139,73 @@ Idempotency-Key: <client-generated UUID>     # required — enables safe retries
 
 **Response `202 Accepted`** (duplicate `Idempotency-Key`): same body, cached result.
 
-**Error responses:**
+**Errors:**
 ```json
-{ "error": { "code": "ORDER_INVALID_PRODUCT", "message": "Unknown product: PROD-999", "productId": "PROD-999" } }
+{ "error": { "code": "ORDER_INVALID_PRODUCT", "message": "Unknown product: PROD-999" } }
 { "error": { "code": "ORDER_INVALID_CURRENCY", "message": "Unsupported currency: JPY" } }
 { "error": { "code": "VALIDATION_ERROR", "message": "Missing required header: Idempotency-Key" } }
 ```
 
 ### `GET /v1/orders/:id`
 
-**Response `200 OK`:** Full order object (see above) — includes `invoiceUrl`, `shipment`, full `statusTimeline` as order progresses.
+Returns the full order object including `invoiceUrl`, `shipment`, and `statusTimeline` as the order progresses.
 
-**Response `404 Not Found`:**
+**`404 Not Found`:**
 ```json
 { "error": { "code": "ORDER_NOT_FOUND", "message": "Order not found: <id>" } }
 ```
 
 ---
 
-## Project Structure
+## Environment Variables
 
-```
-charge-flow/
-├── docker-compose.yml
-├── package.json                        # root — npm workspaces
-├── tsconfig.base.json
-├── nest-cli.json                       # monorepo config
-│
-├── libs/
-│   ├── common/                         # shared DTOs, events, errors, filters
-│   │   └── src/
-│   │       ├── dto/
-│   │       ├── events/order-events.ts  # typed event contracts
-│   │       ├── errors/
-│   │       └── filters/
-│   └── aws/                            # EventBridge + SQS wrappers
-│       └── src/
-│
-└── apps/
-    ├── order-service/     port 3001
-    ├── invoice-service/   port 3002
-    ├── billing-service/   port 3003
-    ├── shipping-service/  port 3004   (includes mock carrier endpoint)
-    └── notification-service/ port 3005
-```
+All services share a base set of AWS variables. Each service has its own `.env` under `apps/<service>/.env`.
 
----
+### Shared (all services)
 
-## Tech Stack
-
-| Concern | Choice |
+| Variable | Description |
 |---|---|
-| Framework | NestJS 10 (native monorepo) |
-| Language | TypeScript 5 — strict mode, no `any` |
-| Database | DynamoDB (`@aws-sdk/lib-dynamodb`) |
-| Event bus | AWS EventBridge → SQS (LocalStack locally) |
-| Validation | `class-validator` + `class-transformer` + global `ValidationPipe` |
-| Config | `@nestjs/config` + Joi schema validation (fail-fast) |
-| PDF | `pdfkit` |
-| Email | AWS SES |
-| Payments | Stripe |
-| Shipping | Mock FedEx NestJS controller |
-| Testing | Jest + `@nestjs/testing` |
-| Local AWS | LocalStack 3 via Docker Compose |
+| `AWS_REGION` | AWS region (`us-east-1`) |
+| `AWS_ACCESS_KEY_ID` | AWS key (`test` for LocalStack) |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret (`test` for LocalStack) |
+| `AWS_ENDPOINT_URL` | Override endpoint — set to `http://localstack:4566` locally |
+| `ORDER_EVENT_BUS_NAME` | EventBridge bus name (`ecommerce-orders`) |
+| `SQS_QUEUE_NAME` | Each service's SQS queue name |
 
----
+### Per-service
 
-## Non-Functional Design Decisions
+| Service | Variable | Description |
+|---|---|---|
+| order-service | `ORDERS_TABLE` | DynamoDB table name |
+| order-service | `SES_FROM_EMAIL` | Sender address for SES emails |
+| invoice-service | `S3_INVOICES_BUCKET` | S3 bucket for PDF invoices |
+| billing-service | `STRIPE_SECRET_KEY` | Stripe secret key |
+| notification-service | `SES_FROM_EMAIL` | Sender address for SES emails |
 
-### Idempotency
-Every `POST /v1/orders` requires an `Idempotency-Key` header. The key is stored in DynamoDB with a GSI. Duplicate requests return the cached `202 Accepted` response without re-processing — safe for client retries under network failures.
+### shipping-service — DHL Express
 
-### Error Handling
-- **HTTP layer**: Global `HttpExceptionFilter` catches `AppError` (domain errors) and `HttpException` (validation errors), returning `{ error: { code, message, ...meta } }`.
-- **SQS consumers**: Handler errors are logged with full context but the message is **not deleted** — it becomes visible again after the visibility timeout and eventually routes to a DLQ (5 max receive count).
-- **Payment failures**: Published as `OrderPaymentFailed` events (not thrown) so the notification service can email the customer and the order status is updated to `FAILED`.
+| Variable | Dev default | Description |
+|---|---|---|
+| `DHL_BASE_URL` | `http://shipping-service:3000/mock-carrier` | DHL API base URL. In production: `https://express.api.dhl.com/mydhlapi` |
+| `DHL_API_KEY` | `dev-placeholder` | DHL API key |
+| `DHL_API_SECRET` | `dev-placeholder` | DHL API secret |
+| `DHL_ACCOUNT_NUMBER` | `dev-placeholder` | DHL account number |
+| `DHL_SHIPPER_NAME` | `Dev Shipper` | Your company name (appears on labels) |
+| `DHL_SHIPPER_EMAIL` | `dev@example.com` | Shipper contact email |
+| `DHL_SHIPPER_PHONE` | `+10000000000` | Shipper contact phone |
+| `DHL_SHIPPER_ADDRESS_LINE1` | `1 Dev Street` | Shipper address |
+| `DHL_SHIPPER_CITY` | `Dev City` | Shipper city |
+| `DHL_SHIPPER_POSTAL_CODE` | `00000` | Shipper postal code |
+| `DHL_SHIPPER_COUNTRY_CODE` | `US` | Shipper country (ISO 3166-1 alpha-2) |
+| `DHL_DEFAULT_WEIGHT_KG` | `1` | Fallback package weight when item weights are unavailable |
 
-### Observability
-All services use structured JSON logging via NestJS `Logger`. Every log entry includes the `orderId` and relevant context. In production, these would be shipped to CloudWatch.
-
-### Data Model
-Orders are stored with a 90-day TTL. The `statusTimeline` array is append-only — each status transition is logged with a timestamp, providing a full audit trail.
-
-### Scalability
-- Each SQS queue has a DLQ (5 max receive count).
-- Long-polling (20s wait time) minimises API calls.
-- EventBridge rules route events to the correct service queue — adding a new service is a matter of creating a new rule.
-- DynamoDB on-demand billing scales automatically.
-
----
-
-## Running Locally
-
-### Prerequisites
-- Docker + Docker Compose
-- Node.js 20+
-
-### Start all services
-```bash
-docker compose up --build
+#### Switching to real DHL in production
+Get credentials at [developer.dhl.com](https://developer.dhl.com), then set:
 ```
-
-### Smoke test
-```bash
-curl -X POST http://localhost:3001/v1/orders \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: $(uuidgen)" \
-  -d '{
-    "customerId": "cust-demo-001",
-    "items": [{"productId": "PROD-001", "quantity": 2}],
-    "shippingAddress": {
-      "line1": "123 Main St",
-      "city": "Springfield",
-      "state": "IL",
-      "postalCode": "62701",
-      "countryCode": "US"
-    },
-    "paymentMethodId": "pm_test_123",
-    "currency": "USD"
-  }'
-```
-
-### Run tests
-```bash
-npm install
-npm test
-```
-
-### Build individual services
-```bash
-npm run build:order-service
-npm run build:invoice-service
-npm run build:billing-service
-npm run build:shipping-service
-npm run build:notification-service
+DHL_BASE_URL=https://express.api.dhl.com/mydhlapi
+DHL_API_KEY=<your key>
+DHL_API_SECRET=<your secret>
+DHL_ACCOUNT_NUMBER=<your account>
 ```
 
 ---
@@ -246,4 +219,33 @@ npm run build:notification-service
 | PROD-003 | Super Doohickey | $12.99 |
 | PROD-004 | Thingamajig Elite | $89.99 |
 
-Prices are verified **server-side** — client-supplied prices are ignored to prevent price manipulation.
+Prices are verified **server-side** — client-supplied prices are ignored.
+
+---
+
+## Tech Stack
+
+| Concern | Choice |
+|---|---|
+| Framework | NestJS 10 (native monorepo) |
+| Language | TypeScript 5 — strict mode |
+| Database | DynamoDB (`@aws-sdk/lib-dynamodb`) |
+| Event bus | AWS EventBridge → SQS (LocalStack locally) |
+| Validation | `class-validator` + `class-transformer` + Joi schema validation |
+| PDF | `pdfkit` |
+| Email | AWS SES |
+| Payments | Stripe |
+| Shipping | DHL Express API (mock carrier in development) |
+| Local AWS | LocalStack 3 via Docker Compose |
+
+---
+
+## Design Notes
+
+**Idempotency** — Every `POST /v1/orders` requires an `Idempotency-Key` header stored in DynamoDB (GSI). Duplicates return `202 Accepted` with the cached response — safe for client retries.
+
+**Error handling** — SQS consumer errors leave the message on the queue (not deleted), so it retries up to 5 times before routing to a DLQ. Payment failures are published as `OrderPaymentFailed` events rather than thrown, so the notification service can email the customer.
+
+**Data model** — Orders have a 90-day TTL. `statusTimeline` is append-only, providing a full audit trail of every status transition with timestamps.
+
+**Shipping mock** — In `development`/`test` environments, `MockCarriersModule` is loaded and `DHL_BASE_URL` points to it (`http://shipping-service:3000/mock-carrier`). The mock returns a DHL-compatible response. In `production`, `MockCarriersModule` is not loaded and the real DHL API is called.

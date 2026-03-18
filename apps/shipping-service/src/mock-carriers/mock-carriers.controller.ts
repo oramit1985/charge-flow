@@ -15,8 +15,8 @@ interface ShipmentRequest {
 }
 
 interface ShipmentResponse {
-  trackingNumber: string;
-  carrier: string;
+  shipmentTrackingNumber: string;
+  packages: Array<{ trackingNumber: string }>;
   estimatedDelivery: string;
 }
 
@@ -34,9 +34,10 @@ export class MockCarriersController {
       Date.now() + estimatedDays * 24 * 60 * 60 * 1000,
     ).toISOString().split('T')[0]!;
 
+    // Returns DHL-compatible response format so DhlService can parse it in development
     return {
-      trackingNumber,
-      carrier: 'MockFedEx',
+      shipmentTrackingNumber: trackingNumber,
+      packages: [{ trackingNumber }],
       estimatedDelivery,
     };
   }
