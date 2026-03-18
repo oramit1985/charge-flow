@@ -84,6 +84,10 @@ curl -X POST http://localhost:3001/v1/orders \
 
 ## REST API
 
+Interactive Swagger UI is available at **`http://localhost:3001/api`** when the stack is running.
+
+
+
 ### `POST /v1/orders`
 
 **Request Headers:**
