@@ -6,7 +6,7 @@
   "root": "apps/order-service",
   "compilerOptions": {
     "tsConfigPath": "apps/order-service/tsconfig.app.json",
-    "webpack": false,
+    "webpack": true,
     "deleteOutDir": true,
     "assets": [],
     "watchAssets": false

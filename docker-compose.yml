@@ -34,6 +34,7 @@ services:
       ORDER_EVENT_BUS_NAME: ecommerce-orders
       ORDERS_TABLE: orders
       SES_FROM_EMAIL: no-reply@ecommerce.example.com
+      SQS_QUEUE_NAME: order-service-status-updates
     depends_on:
       localstack:
         condition: service_healthy
@@ -53,6 +54,7 @@ services:
       AWS_ENDPOINT_URL: http://localstack:4566
       ORDER_EVENT_BUS_NAME: ecommerce-orders
       S3_INVOICES_BUCKET: invoices
+      SQS_QUEUE_NAME: invoice-service-order-created
     depends_on:
       localstack:
         condition: service_healthy
@@ -72,6 +74,7 @@ services:
       AWS_ENDPOINT_URL: http://localstack:4566
       ORDER_EVENT_BUS_NAME: ecommerce-orders
       STRIPE_SECRET_KEY: sk_test_placeholder
+      SQS_QUEUE_NAME: billing-service-order-invoiced
     depends_on:
       localstack:
         condition: service_healthy
@@ -91,6 +94,7 @@ services:
       AWS_ENDPOINT_URL: http://localstack:4566
       ORDER_EVENT_BUS_NAME: ecommerce-orders
       MOCK_CARRIER_BASE_URL: http://shipping-service:3000
+      SQS_QUEUE_NAME: shipping-service-order-paid
     depends_on:
       localstack:
         condition: service_healthy
@@ -110,6 +114,7 @@ services:
       AWS_ENDPOINT_URL: http://localstack:4566
       ORDER_EVENT_BUS_NAME: ecommerce-orders
       SES_FROM_EMAIL: no-reply@ecommerce.example.com
+      SQS_QUEUE_NAME: notification-service-all-events
     depends_on:
       localstack:
         condition: service_healthy
