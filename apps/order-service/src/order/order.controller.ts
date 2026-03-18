@@ -13,7 +13,7 @@ import { Response } from 'express';
 import { OrderService, IDEMPOTENCY_KEY_HEADER } from './order.service';
 import { CreateOrderDto } from '@app/common/dto/order.dto';
 import { AppError } from '@app/common/errors/app.error';
-import { ErrorCode } from '@app/common/errors/error-codes.enum';
+import { ErrorCode } from '@app/common/common-types/enums/error-codes';
 
 /**
  * Handles HTTP requests for the order resource.

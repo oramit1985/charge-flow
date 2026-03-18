@@ -1,21 +1,21 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SqsService } from '@app/aws/sqs.service';
 import { EventBridgeService } from '@app/aws/eventbridge.service';
 import {
   OrderEventType,
   OrderEventEnvelope,
   OrderCreatedPayload,
-} from '@app/common/events/order-events';
+} from '@app/common/common-types';
 import { InvoiceService } from './invoice.service';
 import { Message } from '@aws-sdk/client-sqs';
-
-const QUEUE_NAME = 'invoice-service-order-created';
 
 @Injectable()
 export class InvoiceConsumer implements OnModuleInit {
   private readonly logger = new Logger(InvoiceConsumer.name);
 
   constructor(
+    private readonly configService: ConfigService,
     private readonly sqsService: SqsService,
     private readonly eventBridgeService: EventBridgeService,
     private readonly invoiceService: InvoiceService,
@@ -24,7 +24,9 @@ export class InvoiceConsumer implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     await this.invoiceService.ensureBucketExists();
 
-    const queueUrl = await this.sqsService.ensureQueue(QUEUE_NAME);
+    const queueUrl = await this.sqsService.ensureQueue(
+      this.configService.getOrThrow<string>('SQS_QUEUE_NAME'),
+    );
     const queueArn = await this.sqsService.getQueueArn(queueUrl);
 
     await this.eventBridgeService.createRule(OrderEventType.OrderCreated, {

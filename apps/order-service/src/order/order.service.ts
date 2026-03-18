@@ -16,9 +16,9 @@ import {
   OrderPaidPayload,
   OrderPaymentFailedPayload,
   OrderShippedPayload,
-} from '@app/common/events/order-events';
+} from '@app/common/common-types';
 import { AppError } from '@app/common/errors/app.error';
-import { ErrorCode } from '@app/common/errors/error-codes.enum';
+import { ErrorCode } from '@app/common/common-types/enums/error-codes';
 import {
   PRODUCT_CATALOG,
   TAX_RATES,
@@ -59,7 +59,9 @@ export class OrderService implements OnModuleInit {
    */
   private async setupStatusUpdateQueue(): Promise<void> {
     try {
-      const queueUrl = await this.sqsService.ensureQueue('order-service-status-updates');
+      const queueUrl = await this.sqsService.ensureQueue(
+        this.configService.getOrThrow<string>('SQS_QUEUE_NAME'),
+      );
       const queueArn = await this.sqsService.getQueueArn(queueUrl);
 
       const statusUpdateEvents: OrderEventType[] = [

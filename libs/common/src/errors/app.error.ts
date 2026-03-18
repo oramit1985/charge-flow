@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { ErrorCode } from './error-codes.enum';
+import {ErrorCode} from "@app/common/common-types";
 
 export class AppError extends Error {
   readonly code: ErrorCode;

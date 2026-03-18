@@ -8,7 +8,7 @@ import {
 import {
   OrderEventType,
   OrderEventEnvelope,
-} from '@app/common/events/order-events';
+} from '@app/common/common-types';
 import { buildEmailContent } from './email-templates';
 import { awsConfig } from '@app/aws';
 

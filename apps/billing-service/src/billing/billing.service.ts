@@ -6,8 +6,8 @@ import {
   OrderEventType,
   OrderInvoicedPayload,
   OrderPaidPayload,
-  OrderPaymentFailedPayload,
-} from '@app/common/events/order-events';
+  OrderPaymentFailedPayload
+} from "@app/common/common-types";
 
 @Injectable()
 export class BillingService {
@@ -78,7 +78,7 @@ export class BillingService {
         chargeId: paidPayload.chargeId,
       });
     } catch (error: unknown) {
-      const stripeError = error as Stripe.StripeError;
+      const stripeError = error as Stripe.StripeRawError;
       const reason = stripeError.message ?? 'Unknown payment error';
       const declineCode = stripeError.decline_code;
 

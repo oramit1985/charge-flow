@@ -12,9 +12,9 @@ import {
   OrderEventType,
   OrderCreatedPayload,
   OrderInvoicedPayload,
-} from '@app/common/events/order-events';
+} from '@app/common/common-types';
 import { AppError } from '@app/common/errors/app.error';
-import { ErrorCode } from '@app/common/errors/error-codes.enum';
+import { ErrorCode } from '@app/common/common-types/enums/error-codes';
 
 @Injectable()
 export class InvoiceService {

@@ -6,7 +6,7 @@ import {
   OrderEventEnvelope,
   OrderCreatedPayload,
   OrderShippedPayload,
-} from '@app/common/events/order-events';
+} from '@app/common/common-types';
 
 // Mock SES at module level
 jest.mock('@aws-sdk/client-ses', () => ({

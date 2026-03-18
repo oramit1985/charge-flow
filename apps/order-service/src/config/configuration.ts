@@ -6,6 +6,7 @@ export const validationSchema = awsValidationSchema.append({
   PORT: Joi.number().default(3000),
   ORDERS_TABLE: Joi.string().required(),
   SES_FROM_EMAIL: Joi.string().email().required(),
+  SQS_QUEUE_NAME: Joi.string().required(),
 });
 
 export interface AppConfig {

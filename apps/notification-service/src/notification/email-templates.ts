@@ -5,7 +5,7 @@ import {
   OrderPaidPayload,
   OrderPaymentFailedPayload,
   OrderShippedPayload,
-} from '@app/common/events/order-events';
+} from '@app/common/common-types';
 
 export interface EmailContent {
   subject: string;
@@ -16,16 +16,12 @@ function formatCents(cents: number, currency: string): string {
   return (cents / 100).toLocaleString('en-US', { style: 'currency', currency });
 }
 
-export function buildEmailContent(
-  eventType: OrderEventType,
-  payload: unknown,
-): EmailContent | null {
-  switch (eventType) {
-    case OrderEventType.OrderCreated: {
-      const p = payload as OrderCreatedPayload;
-      return {
-        subject: `Order Confirmed – #${p.orderId.slice(0, 8).toUpperCase()}`,
-        body: `
+const emailBuilders: { [K in OrderEventType]?: (payload: unknown) => EmailContent } = {
+  [OrderEventType.OrderCreated]: (payload) => {
+    const p = payload as OrderCreatedPayload;
+    return {
+      subject: `Order Confirmed – #${p.orderId.slice(0, 8).toUpperCase()}`,
+      body: `
 Hi there,
 
 Thank you for your order! We've received it and are getting it ready.
@@ -37,15 +33,15 @@ We'll email you as soon as your invoice is ready.
 
 Thanks,
 The Ecommerce Team
-        `.trim(),
-      };
-    }
+      `.trim(),
+    };
+  },
 
-    case OrderEventType.OrderInvoiced: {
-      const p = payload as OrderInvoicedPayload;
-      return {
-        subject: `Invoice Ready – #${p.orderId.slice(0, 8).toUpperCase()}`,
-        body: `
+  [OrderEventType.OrderInvoiced]: (payload) => {
+    const p = payload as OrderInvoicedPayload;
+    return {
+      subject: `Invoice Ready – #${p.orderId.slice(0, 8).toUpperCase()}`,
+      body: `
 Hi there,
 
 Your invoice is ready.
@@ -58,15 +54,15 @@ Payment is being processed now.
 
 Thanks,
 The Ecommerce Team
-        `.trim(),
-      };
-    }
+      `.trim(),
+    };
+  },
 
-    case OrderEventType.OrderPaid: {
-      const p = payload as OrderPaidPayload;
-      return {
-        subject: `Payment Confirmed – #${p.orderId.slice(0, 8).toUpperCase()}`,
-        body: `
+  [OrderEventType.OrderPaid]: (payload) => {
+    const p = payload as OrderPaidPayload;
+    return {
+      subject: `Payment Confirmed – #${p.orderId.slice(0, 8).toUpperCase()}`,
+      body: `
 Hi there,
 
 Great news — your payment has been confirmed!
@@ -78,15 +74,15 @@ Your order is now being prepared for shipment.
 
 Thanks,
 The Ecommerce Team
-        `.trim(),
-      };
-    }
+      `.trim(),
+    };
+  },
 
-    case OrderEventType.OrderPaymentFailed: {
-      const p = payload as OrderPaymentFailedPayload;
-      return {
-        subject: `Payment Failed – Action Required – #${p.orderId.slice(0, 8).toUpperCase()}`,
-        body: `
+  [OrderEventType.OrderPaymentFailed]: (payload) => {
+    const p = payload as OrderPaymentFailedPayload;
+    return {
+      subject: `Payment Failed – Action Required – #${p.orderId.slice(0, 8).toUpperCase()}`,
+      body: `
 Hi there,
 
 Unfortunately, we were unable to process your payment.
@@ -98,15 +94,15 @@ Please update your payment method and try again.
 
 Thanks,
 The Ecommerce Team
-        `.trim(),
-      };
-    }
+      `.trim(),
+    };
+  },
 
-    case OrderEventType.OrderShipped: {
-      const p = payload as OrderShippedPayload;
-      return {
-        subject: `Your Order Has Shipped! – #${p.orderId.slice(0, 8).toUpperCase()}`,
-        body: `
+  [OrderEventType.OrderShipped]: (payload) => {
+    const p = payload as OrderShippedPayload;
+    return {
+      subject: `Your Order Has Shipped! – #${p.orderId.slice(0, 8).toUpperCase()}`,
+      body: `
 Hi there,
 
 Your order is on its way!
@@ -118,11 +114,14 @@ Estimated Delivery: ${p.estimatedDelivery}
 
 Thanks,
 The Ecommerce Team
-        `.trim(),
-      };
-    }
+      `.trim(),
+    };
+  },
+};
 
-    default:
-      return null;
-  }
+export function buildEmailContent(
+  eventType: OrderEventType,
+  payload: unknown,
+): EmailContent | null {
+  return emailBuilders[eventType]?.(payload) ?? null;
 }

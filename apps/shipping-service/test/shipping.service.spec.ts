@@ -4,7 +4,7 @@ import { HttpService } from '@nestjs/axios';
 import { of, throwError } from 'rxjs';
 import { ShippingService } from '../src/shipping/shipping.service';
 import { EventBridgeService } from '@app/aws/eventbridge.service';
-import { OrderEventType, OrderPaidPayload } from '@app/common/events/order-events';
+import { OrderEventType, OrderPaidPayload } from '@app/common/common-types';
 import { AxiosResponse } from 'axios';
 
 const mockEventBridgeService = {

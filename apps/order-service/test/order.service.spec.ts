@@ -6,8 +6,8 @@ import { EventBridgeService } from '@app/aws/eventbridge.service';
 import { SqsService } from '@app/aws/sqs.service';
 import { CreateOrderDto } from '@app/common/dto/order.dto';
 import { AppError } from '@app/common/errors/app.error';
-import { ErrorCode } from '@app/common/errors/error-codes.enum';
-import { OrderEventType } from '@app/common/events/order-events';
+import { ErrorCode } from '@app/common/common-types/enums/error-codes';
+import { OrderEventType } from '@app/common/common-types';
 
 const mockOrderRepository = {
   ensureTableExists: jest.fn(),

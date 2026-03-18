@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { InvoiceService } from '../src/invoice/invoice.service';
 import { EventBridgeService } from '@app/aws/eventbridge.service';
-import { OrderCreatedPayload, OrderEventType } from '@app/common/events/order-events';
+import { OrderCreatedPayload, OrderEventType } from '@app/common/common-types';
 
 // Mock S3Client at module level
 jest.mock('@aws-sdk/client-s3', () => ({

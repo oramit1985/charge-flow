@@ -1,28 +1,22 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SqsService } from '@app/aws/sqs.service';
 import { EventBridgeService } from '@app/aws/eventbridge.service';
 import {
   OrderEventType,
   OrderEventEnvelope,
-} from '@app/common/events/order-events';
+} from '@app/common/common-types';
 import { NotificationService } from './notification.service';
 import { Message } from '@aws-sdk/client-sqs';
 
-const QUEUE_NAME = 'notification-service-all-events';
-
-const ALL_ORDER_EVENTS: OrderEventType[] = [
-  OrderEventType.OrderCreated,
-  OrderEventType.OrderInvoiced,
-  OrderEventType.OrderPaid,
-  OrderEventType.OrderPaymentFailed,
-  OrderEventType.OrderShipped,
-];
+const ALL_ORDER_EVENTS: OrderEventType[] = Object.values(OrderEventType);
 
 @Injectable()
 export class NotificationConsumer implements OnModuleInit {
   private readonly logger = new Logger(NotificationConsumer.name);
 
   constructor(
+    private readonly configService: ConfigService,
     private readonly sqsService: SqsService,
     private readonly eventBridgeService: EventBridgeService,
     private readonly notificationService: NotificationService,
@@ -31,7 +25,9 @@ export class NotificationConsumer implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     await this.notificationService.verifySenderEmail();
 
-    const queueUrl = await this.sqsService.ensureQueue(QUEUE_NAME);
+    const queueUrl = await this.sqsService.ensureQueue(
+      this.configService.getOrThrow<string>('SQS_QUEUE_NAME'),
+    );
     const queueArn = await this.sqsService.getQueueArn(queueUrl);
 
     for (const eventType of ALL_ORDER_EVENTS) {

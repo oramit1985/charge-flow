@@ -5,6 +5,7 @@ export const validationSchema = awsValidationSchema.append({
   NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
   PORT: Joi.number().default(3000),
   SES_FROM_EMAIL: Joi.string().email().required(),
+  SQS_QUEUE_NAME: Joi.string().required(),
 });
 
 export default () => ({

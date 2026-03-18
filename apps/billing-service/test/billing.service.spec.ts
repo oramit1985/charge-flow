@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { BillingService } from '../src/billing/billing.service';
 import { EventBridgeService } from '@app/aws/eventbridge.service';
-import { OrderEventType, OrderInvoicedPayload } from '@app/common/events/order-events';
+import { OrderEventType, OrderInvoicedPayload } from '@app/common/common-types';
 
 // Mock stripe at module level
 jest.mock('stripe', () => {
