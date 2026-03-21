@@ -14,7 +14,7 @@ import {OrderEventEnvelope, OrderEventType} from "@app/common/common-types";
 
 interface SqsTarget {
   queueArn: string;
-  eventPattern: string;
+  eventType: string;
 }
 
 @Injectable()
@@ -61,11 +61,11 @@ export class EventBridgeService implements OnModuleInit {
   /**
    * Creates an EventBridge rule that routes events of the given type to the target SQS queue.
    */
-  async createRule(eventType: OrderEventType, target: SqsTarget): Promise<void> {
-    const ruleName = `route-${eventType}`;
+  async createRule(target: SqsTarget): Promise<void> {
+    const ruleName = `route-${target.eventType}`;
     const eventPattern = JSON.stringify({
       source: ['ecommerce.orders'],
-      'detail-type': [eventType],
+      'detail-type': [target.eventType],
     });
 
     try {

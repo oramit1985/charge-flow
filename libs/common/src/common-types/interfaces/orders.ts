@@ -46,6 +46,8 @@ export interface OrderInvoicedPayload {
     total: number;
     currency: string;
     paymentMethodId: string;
+    shippingAddress: Address;
+    items: OrderItem[];
 }
 
 export interface OrderPaidPayload {

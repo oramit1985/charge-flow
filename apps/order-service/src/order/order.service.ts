@@ -72,9 +72,9 @@ export class OrderService implements OnModuleInit {
       ];
 
       for (const eventType of statusUpdateEvents) {
-        await this.eventBridgeService.createRule(eventType, {
+        await this.eventBridgeService.createRule({
           queueArn,
-          eventPattern: eventType,
+          eventType: eventType,
         });
       }
 

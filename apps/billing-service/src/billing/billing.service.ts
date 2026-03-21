@@ -62,14 +62,8 @@ export class BillingService {
         chargeId: paymentIntent.latest_charge as string ?? paymentIntent.id,
         total: payload.total,
         currency: payload.currency,
-        shippingAddress: {
-          line1: '',
-          city: '',
-          state: '',
-          postalCode: '',
-          countryCode: '',
-        },
-        items: [],
+        shippingAddress: payload.shippingAddress,
+        items: payload.items,
       };
 
       await this.eventBridgeService.publishEvent(OrderEventType.OrderPaid, paidPayload);

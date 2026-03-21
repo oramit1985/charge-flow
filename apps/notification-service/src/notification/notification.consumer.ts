@@ -31,10 +31,7 @@ export class NotificationConsumer implements OnModuleInit {
     const queueArn = await this.sqsService.getQueueArn(queueUrl);
 
     for (const eventType of ALL_ORDER_EVENTS) {
-      await this.eventBridgeService.createRule(eventType, {
-        queueArn,
-        eventPattern: eventType,
-      });
+      await this.eventBridgeService.createRule({ queueArn, eventType });
     }
 
     this.sqsService.startPolling(queueUrl, (msg) => this.handleMessage(msg));

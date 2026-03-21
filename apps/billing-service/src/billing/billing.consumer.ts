@@ -23,10 +23,7 @@ export class BillingConsumer implements OnModuleInit {
     );
     const queueArn = await this.sqsService.getQueueArn(queueUrl);
 
-    await this.eventBridgeService.createRule(OrderEventType.OrderInvoiced, {
-      queueArn,
-      eventPattern: OrderEventType.OrderInvoiced,
-    });
+    await this.eventBridgeService.createRule({ queueArn, eventType: OrderEventType.OrderInvoiced });
 
     this.sqsService.startPolling(queueUrl, (msg) => this.handleMessage(msg));
     this.logger.log('Billing consumer started', { queueUrl });

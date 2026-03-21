@@ -96,6 +96,8 @@ export class InvoiceService {
       total: payload.total,
       currency: payload.currency,
       paymentMethodId: payload.paymentMethodId,
+      shippingAddress: payload.shippingAddress,
+      items: payload.items,
     };
 
     await this.eventBridgeService.publishEvent(OrderEventType.OrderInvoiced, invoicedPayload);

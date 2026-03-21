@@ -81,6 +81,9 @@ export class SqsService implements OnModuleDestroy {
 
   /**
    * Returns the ARN for the given queue URL.
+   * Used for:
+     * permissions
+     * integrations between AWS services
    */
   async getQueueArn(queueUrl: string): Promise<string> {
     const result = await this.client.send(

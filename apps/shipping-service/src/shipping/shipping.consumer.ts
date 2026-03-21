@@ -27,10 +27,7 @@ export class ShippingConsumer implements OnModuleInit {
     );
     const queueArn = await this.sqsService.getQueueArn(queueUrl);
 
-    await this.eventBridgeService.createRule(OrderEventType.OrderPaid, {
-      queueArn,
-      eventPattern: OrderEventType.OrderPaid,
-    });
+    await this.eventBridgeService.createRule({ queueArn, eventType: OrderEventType.OrderPaid });
 
     this.sqsService.startPolling(queueUrl, (msg) => this.handleMessage(msg));
     this.logger.log('Shipping consumer started', { queueUrl });
