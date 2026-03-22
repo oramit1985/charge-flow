@@ -101,9 +101,9 @@ export class EventBridgeService implements OnModuleInit {
   /**
    * Publishes a typed order event to the EventBridge bus.
    */
-  async publishEvent<T>(eventType: OrderEventType, payload: T): Promise<void> {
+  async publishEvent<T>(eventType: OrderEventType, payload: T, eventId?: string): Promise<void> {
     const envelope: OrderEventEnvelope<T> = {
-      eventId: uuidv4(),
+      eventId: eventId ?? uuidv4(),
       eventType,
       version: '1.0',
       occurredAt: new Date().toISOString(),

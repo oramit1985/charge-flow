@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SqsService } from '@app/aws/sqs.service';
 import { EventBridgeService } from '@app/aws/eventbridge.service';
+import { IdempotencyService } from '@app/aws/idempotency.service';
 import {
   OrderEventType,
   OrderEventEnvelope,
@@ -19,6 +20,7 @@ export class NotificationConsumer implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly sqsService: SqsService,
     private readonly eventBridgeService: EventBridgeService,
+    private readonly idempotencyService: IdempotencyService,
     private readonly notificationService: NotificationService,
   ) {}
 
@@ -55,6 +57,8 @@ export class NotificationConsumer implements OnModuleInit {
       eventId: envelope.eventId,
     });
 
-    await this.notificationService.sendNotification(envelope);
+    await this.idempotencyService.runOnce(envelope.eventId, () =>
+      this.notificationService.sendNotification(envelope),
+    );
   }
 }

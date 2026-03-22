@@ -7,6 +7,7 @@ async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule, {
     logger: ['log', 'warn', 'error'],
+    rawBody: true, // required for Stripe webhook signature verification
   });
   app.useGlobalFilters(new HttpExceptionFilter());
   const port = process.env['PORT'] ?? '3000';

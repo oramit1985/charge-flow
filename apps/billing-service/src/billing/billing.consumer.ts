@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SqsService } from '@app/aws/sqs.service';
 import { EventBridgeService } from '@app/aws/eventbridge.service';
+import { IdempotencyService } from '@app/aws/idempotency.service';
 import { BillingService } from './billing.service';
 import { Message } from '@aws-sdk/client-sqs';
 import { OrderEventEnvelope, OrderEventType, OrderInvoicedPayload } from '@app/common/common-types';
@@ -14,6 +15,7 @@ export class BillingConsumer implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly sqsService: SqsService,
     private readonly eventBridgeService: EventBridgeService,
+    private readonly idempotencyService: IdempotencyService,
     private readonly billingService: BillingService,
   ) {}
 
@@ -51,6 +53,8 @@ export class BillingConsumer implements OnModuleInit {
       orderId: envelope.payload.orderId,
     });
 
-    await this.billingService.processInvoicedOrder(envelope.payload);
+    await this.idempotencyService.runOnce(envelope.eventId, () =>
+      this.billingService.processInvoicedOrder(envelope.payload),
+    );
   }
 }
